@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { deriveTheme, extractPalette } from "@/lib/color";
+import { DEFAULT_ACCENT, DEFAULT_PRIMARY, deriveTheme, extractPalette } from "@/lib/color";
+import { Field } from "@/components/Field";
+import { Icon } from "@/components/Icon";
 import type { Theme } from "@/db/schema";
 import { saveTheme } from "../actions";
 
@@ -29,8 +31,8 @@ async function loadLogo(file: File): Promise<{ dataUrl: string; palette: string[
 export function ThemeFromLogo({ initialLogo, initialTheme }: { initialLogo: string | null; initialTheme: Theme | null }) {
   const [logo, setLogo] = useState(initialLogo);
   const [palette, setPalette] = useState<string[]>([]);
-  const [primary, setPrimary] = useState(initialTheme?.primary ?? "#3f7368");
-  const [accent, setAccent] = useState(initialTheme?.accent ?? "#e9b8a4");
+  const [primary, setPrimary] = useState(initialTheme?.primary ?? DEFAULT_PRIMARY);
+  const [accent, setAccent] = useState(initialTheme?.accent ?? DEFAULT_ACCENT);
   const [msg, setMsg] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const theme = { ...deriveTheme(primary, accent) };
@@ -51,33 +53,34 @@ export function ThemeFromLogo({ initialLogo, initialTheme }: { initialLogo: stri
   return (
     <div className="stack">
       <div className="row">
-        {logo && <img src={logo} alt="לוגו" style={{ height: 56, width: "auto", borderRadius: 8 }} />}
-        <label className="btn">העלאת לוגו<input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden onChange={(e) => onFile(e.target.files?.[0])} /></label>
+        {logo && <img src={logo} alt="לוגו" className="logo-preview" />}
+        <label className="btn"><Icon name="plus" />העלאת לוגו<input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden onChange={(e) => onFile(e.target.files?.[0])} /></label>
         {logo && <button type="button" className="btn ghost danger" onClick={() => setLogo(null)}>הסרת לוגו</button>}
       </div>
 
       {palette.length > 0 && (
         <div className="row" aria-label="צבעים מהלוגו">
           {palette.map((c) => (
-            <button key={c} type="button" onClick={() => setPrimary(c)} aria-label={`צבע ראשי ${c}`} title={c}
-              style={{ width: 36, height: 36, borderRadius: "50%", background: c, border: c === primary ? "3px solid var(--ink)" : "1px solid var(--line)", cursor: "pointer" }} />
+            <button key={c} type="button" className="swatch" onClick={() => setPrimary(c)} aria-label={`צבע ראשי ${c}`} aria-pressed={c === primary}
+              style={{ background: c }} />
           ))}
         </div>
       )}
 
       <div className="grid2">
-        <label className="f">צבע ראשי<input type="color" value={primary} onChange={(e) => setPrimary(e.target.value)} /></label>
-        <label className="f">צבע משני<input type="color" value={accent} onChange={(e) => setAccent(e.target.value)} /></label>
+        <Field label="צבע ראשי"><input type="color" value={primary} onChange={(e) => setPrimary(e.target.value)} /></Field>
+        <Field label="צבע משני"><input type="color" value={accent} onChange={(e) => setAccent(e.target.value)} /></Field>
       </div>
 
-      <div className="card" style={{ background: theme.primarySoft, borderColor: "transparent" }}>
+      {/* תצוגה מקדימה: ערכי המיתוג הם נתונים שהמשתמש בחר, לכן מוזרקים כאן ולא כטוקן קבוע */}
+      <div className="card theme-preview" aria-label="תצוגה מקדימה" style={{ background: theme.primarySoft }}>
         <div className="between">
-          <span style={{ color: theme.primaryText, fontFamily: "var(--font-display)", fontSize: "1.4rem" }}>6 נותרו</span>
-          <span style={{ background: theme.primary, color: theme.onPrimary, borderRadius: 12, padding: "8px 16px" }}>נקב</span>
+          <span className="num" style={{ color: theme.primaryText }}>6 נותרו</span>
+          <span className="fake-btn" style={{ background: theme.primary, color: theme.onPrimary }}>נקב</span>
         </div>
-        <div style={{ height: 6, borderRadius: 3, background: theme.accent, marginTop: 10 }} />
+        <div className="bar" style={{ background: theme.accent }} />
       </div>
-      <p className="faint" style={{ margin: 0 }}>הצבעים מותאמים אוטומטית לניגודיות קריאה.</p>
+      <p className="faint m0">הצבעים מותאמים אוטומטית לניגודיות קריאה.</p>
 
       <div className="row">
         <button type="button" className="btn primary" disabled={pending}
@@ -85,7 +88,7 @@ export function ThemeFromLogo({ initialLogo, initialTheme }: { initialLogo: stri
           {pending ? "שומרים…" : "שמירת מיתוג"}
         </button>
         <button type="button" className="btn ghost" disabled={pending}
-          onClick={() => start(async () => { const r = await saveTheme(logo, null); setPrimary("#3f7368"); setAccent("#e9b8a4"); setMsg(r.error ?? "חזרנו לברירת המחדל"); })}>
+          onClick={() => start(async () => { const r = await saveTheme(logo, null); setPrimary(DEFAULT_PRIMARY); setAccent(DEFAULT_ACCENT); setMsg(r.error ?? "חזרנו לברירת המחדל"); })}>
           ברירת מחדל
         </button>
         {msg && <span className="msg" role="status">{msg}</span>}

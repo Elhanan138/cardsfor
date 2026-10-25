@@ -1,3 +1,7 @@
+/** ברירת המחדל — זהה לטוקנים ב-globals.css */
+export const DEFAULT_PRIMARY = "#3f7368";
+export const DEFAULT_ACCENT = "#e9b8a4";
+
 export type RGB = [number, number, number];
 
 export const hexToRgb = (h: string): RGB => {

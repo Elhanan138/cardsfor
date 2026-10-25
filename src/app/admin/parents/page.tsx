@@ -4,6 +4,11 @@ import { db, schema } from "@/db";
 import { requireAdmin } from "@/lib/guards";
 import { parentsWithBalance } from "@/lib/data";
 import { ActionForm } from "@/components/ActionForm";
+import { EmptyState } from "@/components/EmptyState";
+import { Field } from "@/components/Field";
+import { Icon } from "@/components/Icon";
+import { PageHeader } from "@/components/PageHeader";
+import { StatusBadge } from "@/components/StatusBadge";
 import { createParent } from "../actions";
 
 export default async function Parents() {
@@ -14,43 +19,45 @@ export default async function Parents() {
   ]);
   return (
     <main className="wrap stack">
+      <PageHeader title="הורים" description={parents.length ? `${parents.length} הורים במערכת` : undefined} />
       <section className="card">
-        <details>
-          <summary>הוספת הורה</summary>
+        <details open={parents.length === 0}>
+          <summary><Icon name="plus" />הוספת הורה</summary>
           <ActionForm action={createParent} submit="הוספה">
             <div className="grid2">
-              <label className="f">שם ההורה<input name="parentName" required /></label>
-              <label className="f">שם התינוק<input name="babyName" /></label>
+              <Field label="שם ההורה" required><input name="parentName" required /></Field>
+              <Field label="שם התינוק"><input name="babyName" /></Field>
             </div>
             <div className="grid2">
-              <label className="f">מייל<input name="email" type="email" required dir="ltr" /></label>
-              <label className="f">טלפון<input name="phone" type="tel" dir="ltr" /></label>
+              <Field label="מייל" required><input name="email" type="email" required dir="ltr" /></Field>
+              <Field label="טלפון"><input name="phone" type="tel" dir="ltr" /></Field>
             </div>
             <div className="grid2">
-              <label className="f">סיסמה זמנית<input name="password" minLength={8} required dir="ltr" /></label>
-              <label className="f">כרטיסייה ראשונה
+              <Field label="סיסמה זמנית" required help="לפחות 8 תווים. שלחו להורה אחרי השמירה"><input name="password" minLength={8} required dir="ltr" /></Field>
+              <Field label="כרטיסייה ראשונה">
                 <select name="templateId" defaultValue="">
                   <option value="">בלי</option>
                   {templates.map((t) => <option key={t.id} value={t.id}>{t.name} · {t.entries} כניסות</option>)}
                 </select>
-              </label>
+              </Field>
             </div>
           </ActionForm>
         </details>
       </section>
-      <section className="card" style={{ padding: "4px 16px" }}>
-        {parents.length === 0 ? <p className="faint">ההורה הראשון יופיע כאן</p> : (
+      <section className="card list-card">
+        {parents.length === 0 ? <EmptyState icon="users" text="ההורה הראשון יופיע כאן. מלאו את הטופס למעלה" /> : (
           <ul className="list">
             {parents.map((p) => {
               const left = p.entries != null ? p.entries - p.used : null;
               return (
                 <li key={p.id}>
-                  <Link href={`/admin/parents/${p.id}`} style={{ textDecoration: "none", color: "inherit", flex: 1 }}>
-                    <b style={{ fontWeight: 600 }}>{p.parent_name}</b>{p.baby_name ? <span className="muted"> · {p.baby_name}</span> : null}
-                    <div className="faint">{p.email}</div>
+                  <Link href={`/admin/parents/${p.id}`} className="plain-link grow">
+                    <div><span className="strong">{p.parent_name}</span>{p.baby_name ? <span className="muted"> · {p.baby_name}</span> : null}</div>
+                    <div className="faint ltr">{p.email}</div>
                   </Link>
-                  {left === null ? <span className="tag soft">ללא כרטיסייה</span>
-                    : <span className={`tag ${p.paid ? "ok" : "warn"}`}>{left} נותרו{p.paid ? "" : " · לא שולם"}</span>}
+                  {left === null ? <StatusBadge>ללא כרטיסייה</StatusBadge>
+                    : <StatusBadge tone={p.paid ? "success" : "warning"}>{left} נותרו{p.paid ? "" : " · לא שולם"}</StatusBadge>}
+                  <Icon name="chevronLeft" size="sm" />
                 </li>
               );
             })}

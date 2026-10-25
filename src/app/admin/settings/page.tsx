@@ -1,10 +1,17 @@
+import Link from "next/link";
 import { asc, desc, eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { requireAdmin } from "@/lib/guards";
 import { fmtSession, upcomingSessions } from "@/lib/data";
 import { getSettings } from "@/lib/settings";
 import { ActionForm } from "@/components/ActionForm";
+import { EmptyState } from "@/components/EmptyState";
+import { Field } from "@/components/Field";
+import { Icon } from "@/components/Icon";
+import { PageHeader } from "@/components/PageHeader";
+import { SessionTimeField } from "@/components/SessionTimeField";
 import { Toggle } from "@/components/Toggle";
+import { UndoRow } from "@/components/UndoRow";
 import { addAdmin, addSession, addTemplate, addWorkshopType, deleteSession, saveBusiness, toggleTemplate, toggleWorkshopType } from "../actions";
 import { ThemeFromLogo } from "./ThemeFromLogo";
 
@@ -21,6 +28,8 @@ export default async function Settings() {
 
   return (
     <main className="wrap stack">
+      <PageHeader title="הגדרות" description="מיתוג, פרטי קשר, סדנאות, כרטיסיות ומנהלים" />
+
       <section className="card stack">
         <h3>מיתוג</h3>
         <ThemeFromLogo initialLogo={s?.logoDataUrl ?? null} initialTheme={s?.theme ?? null} />
@@ -29,79 +38,92 @@ export default async function Settings() {
       <section className="card stack">
         <h3>עסק ויצירת קשר</h3>
         <ActionForm action={saveBusiness} submit="שמירה" resetOnOk={false}>
-          <label className="f">שם העסק<input name="businessName" defaultValue={s?.businessName ?? ""} required /></label>
+          <Field label="שם העסק" required><input name="businessName" defaultValue={s?.businessName ?? ""} required /></Field>
           <div className="grid2">
-            <label className="f">טלפון לביט<input name="bitPhone" type="tel" defaultValue={s?.bitPhone ?? ""} dir="ltr" /></label>
-            <label className="f">וואטסאפ<input name="whatsappPhone" type="tel" defaultValue={s?.whatsappPhone ?? ""} dir="ltr" /></label>
+            <Field label="טלפון לביט"><input name="bitPhone" type="tel" defaultValue={s?.bitPhone ?? ""} dir="ltr" /></Field>
+            <Field label="וואטסאפ"><input name="whatsappPhone" type="tel" defaultValue={s?.whatsappPhone ?? ""} dir="ltr" /></Field>
           </div>
-          <label className="f">טלפון לחיוג<input name="callPhone" type="tel" defaultValue={s?.callPhone ?? ""} dir="ltr" /></label>
-          <label className="f">קישור לפתיחת ביט (לא חובה)<input name="bitUrl" type="url" placeholder="https://" defaultValue={s?.bitUrl ?? ""} dir="ltr" /></label>
+          <Field label="טלפון לחיוג"><input name="callPhone" type="tel" defaultValue={s?.callPhone ?? ""} dir="ltr" /></Field>
+          <Field label="קישור לפתיחת ביט" help="לא חובה. אם יש לכם קישור תשלום של ביט, הכפתור גם יפתח אותו">
+            <input name="bitUrl" type="url" placeholder="https://" defaultValue={s?.bitUrl ?? ""} dir="ltr" />
+          </Field>
         </ActionForm>
       </section>
 
       <section className="card stack">
         <h3>סוגי סדנאות</h3>
-        <ul className="list">
-          {types.map((t) => (
-            <li key={t.id}><span style={{ opacity: t.active ? 1 : 0.5 }}>{t.name}</span><Toggle on={t.active} label={`פעיל: ${t.name}`} onChange={toggleWorkshopType.bind(null, t.id)} /></li>
-          ))}
-        </ul>
-        <ActionForm action={addWorkshopType} submit="הוספה" className="row">
-          <input name="name" placeholder="עיסוי תינוקות" required style={{ flex: 1, width: "auto" }} aria-label="שם סדנה" />
+        {types.length === 0 ? <EmptyState icon="tag" text="הוסיפו את סוג הסדנה הראשון כדי לנקב ולתזמן מפגשים" /> : (
+          <ul className="list">
+            {types.map((t) => (
+              <li key={t.id} className={t.active ? undefined : "is-off"}><span>{t.name}</span><Toggle on={t.active} label={`פעיל: ${t.name}`} onChange={toggleWorkshopType.bind(null, t.id)} /></li>
+            ))}
+          </ul>
+        )}
+        <ActionForm action={addWorkshopType} submit="הוספה" className="row nowrap">
+          <input name="name" placeholder="עיסוי תינוקות" required className="grow" aria-label="שם סדנה" />
         </ActionForm>
       </section>
 
       <section className="card stack">
         <h3>תבניות כרטיסיות</h3>
-        <ul className="list">
-          {templates.map((t) => (
-            <li key={t.id}><span style={{ opacity: t.active ? 1 : 0.5 }}>{t.name} · {t.entries} כניסות · {t.price} ₪</span><Toggle on={t.active} label={`פעילה: ${t.name}`} onChange={toggleTemplate.bind(null, t.id)} /></li>
-          ))}
-        </ul>
-        <ActionForm action={addTemplate} submit="הוספה">
-          <label className="f">שם<input name="name" placeholder="כרטיסיית 8" required /></label>
-          <div className="grid2">
-            <label className="f">כניסות<input name="entries" type="number" min={1} max={200} required /></label>
-            <label className="f">מחיר (₪)<input name="price" type="number" min={0} required /></label>
-          </div>
-        </ActionForm>
+        {templates.length === 0 ? <EmptyState icon="ticket" text="תבנית חוסכת הקלדה בכל פתיחת כרטיסייה" /> : (
+          <ul className="list">
+            {templates.map((t) => (
+              <li key={t.id} className={t.active ? undefined : "is-off"}><span>{t.name} · {t.entries} כניסות · {t.price} ₪</span><Toggle on={t.active} label={`פעילה: ${t.name}`} onChange={toggleTemplate.bind(null, t.id)} /></li>
+            ))}
+          </ul>
+        )}
+        <details open={templates.length === 0}>
+          <summary><Icon name="plus" />תבנית חדשה</summary>
+          <ActionForm action={addTemplate} submit="הוספה">
+            <Field label="שם" required><input name="name" placeholder="כרטיסיית 8" required /></Field>
+            <div className="grid2">
+              <Field label="כניסות" required><input name="entries" type="number" inputMode="numeric" min={1} max={200} required /></Field>
+              <Field label="מחיר (₪)" required><input name="price" type="number" inputMode="numeric" min={0} required /></Field>
+            </div>
+          </ActionForm>
+        </details>
       </section>
 
       <section className="card stack">
         <h3>מפגשים קרובים</h3>
-        <ul className="list">
-          {sessions.map((x) => (
-            <li key={x.id}>
-              <span>{x.workshop} · {fmtSession(x.starts_at)}{x.location ? <span className="faint"> · {x.location}</span> : null}</span>
-              <form action={deleteSession.bind(null, x.id)}><button className="btn ghost danger">מחיקה</button></form>
-            </li>
-          ))}
-        </ul>
+        {sessions.length === 0 ? <EmptyState icon="calendar" text="אין מפגשים מתוכננים. ההורים יראו כאן את המפגשים שתוסיפו" /> : (
+          <ul className="list">
+            {sessions.map((x) => (
+              <UndoRow key={x.id} action={deleteSession.bind(null, x.id)} button="מחיקה" toast={`המפגש ${x.workshop} נמחק`}>
+                <span className="grow">{x.workshop} · <span className="ltr">{fmtSession(x.starts_at)}</span>{x.location ? <span className="faint"> · {x.location}</span> : null}</span>
+              </UndoRow>
+            ))}
+          </ul>
+        )}
         {activeTypes.length ? (
-          <ActionForm action={addSession} submit="הוספת מפגש">
-            <div className="grid2">
-              <label className="f">סדנה
+          <details open={sessions.length === 0}>
+            <summary><Icon name="plus" />מפגש חדש</summary>
+            <ActionForm action={addSession} submit="הוספת מפגש">
+              <Field label="סדנה" required>
                 <select name="workshopTypeId">{activeTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select>
-              </label>
-              <label className="f">מתי<input name="startsAt" type="datetime-local" required /></label>
-            </div>
-            <label className="f">מקום<input name="location" /></label>
-          </ActionForm>
-        ) : <p className="faint" style={{ margin: 0 }}>הוסיפו סוג סדנה כדי לתזמן מפגשים</p>}
+              </Field>
+              <SessionTimeField />
+              <Field label="מקום"><input name="location" /></Field>
+            </ActionForm>
+          </details>
+        ) : <p className="faint m0">הוסיפו סוג סדנה כדי לתזמן מפגשים</p>}
       </section>
 
       <section className="card stack">
         <h3>מנהלים</h3>
-        <ul className="list">{admins.map((a) => <li key={a.id}><span>{a.name}</span><span className="faint" dir="ltr">{a.email}</span></li>)}</ul>
+        <ul className="list">{admins.map((a) => <li key={a.id}><span>{a.name}</span><span className="faint ltr">{a.email}</span></li>)}</ul>
         <details>
-          <summary>הוספת מנהל</summary>
+          <summary><Icon name="plus" />הוספת מנהל</summary>
           <ActionForm action={addAdmin} submit="הוספה">
-            <label className="f">שם<input name="parentName" required /></label>
-            <label className="f">מייל<input name="email" type="email" required dir="ltr" /></label>
-            <label className="f">סיסמה (10+ תווים)<input name="password" minLength={10} required dir="ltr" /></label>
+            <Field label="שם" required><input name="parentName" required /></Field>
+            <Field label="מייל" required><input name="email" type="email" required dir="ltr" /></Field>
+            <Field label="סיסמה" required help="לפחות 10 תווים"><input name="password" minLength={10} required dir="ltr" /></Field>
           </ActionForm>
         </details>
       </section>
+
+      <p className="faint center m0"><Link href="/admin/styleguide">מדריך עיצוב</Link></p>
     </main>
   );
 }

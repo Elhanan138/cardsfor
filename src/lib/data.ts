@@ -59,8 +59,4 @@ export async function upcomingSessions(limit = 6): Promise<SessionRow[]> {
   return r.rows as SessionRow[];
 }
 
-const TZ = "Asia/Jerusalem";
-export const fmtDate = (d: string | Date) =>
-  new Date(d).toLocaleDateString("he-IL", { timeZone: TZ, day: "numeric", month: "numeric" });
-export const fmtSession = (d: string | Date) =>
-  new Date(d).toLocaleString("he-IL", { timeZone: TZ, weekday: "short", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
+export { fmtDate, fmtSession } from "./formatDate";

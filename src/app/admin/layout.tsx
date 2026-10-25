@@ -1,7 +1,8 @@
 import { requireAdmin } from "@/lib/guards";
 import { getSettings } from "@/lib/settings";
 import { AdminNav } from "@/components/AdminNav";
-import { signOut } from "@/auth";
+import { Brand } from "@/components/Brand";
+import { SignOut } from "@/components/SignOut";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await requireAdmin();
@@ -9,12 +10,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <>
       <header className="top">
-        {s?.logoDataUrl ? <img src={s.logoDataUrl} alt={s.businessName} /> : <h2>{s?.businessName}</h2>}
-        <div className="row" style={{ gap: 4 }}>
+        <Brand logo={s?.logoDataUrl} name={s?.businessName} />
+        <div className="row nowrap admin-actions">
           <AdminNav />
-          <form action={async () => { "use server"; await signOut({ redirectTo: "/login" }); }}>
-            <button className="btn ghost">יציאה</button>
-          </form>
+          <SignOut />
         </div>
       </header>
       {children}

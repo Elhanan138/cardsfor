@@ -5,10 +5,15 @@ import { db, schema } from "@/db";
 import { requireAdmin } from "@/lib/guards";
 import { cardsFor, fmtDate, visitsFor } from "@/lib/data";
 import { ActionForm } from "@/components/ActionForm";
-import { Toggle } from "@/components/Toggle";
+import { ConfirmButton } from "@/components/ConfirmButton";
+import { EmptyState } from "@/components/EmptyState";
+import { Field } from "@/components/Field";
+import { Icon } from "@/components/Icon";
 import { PunchDots } from "@/components/PunchDots";
-import { createCard, resetPassword, setActive, setPaid, updateParent } from "../../actions";
-import { VoidButton } from "./VoidButton";
+import { StatusBadge } from "@/components/StatusBadge";
+import { Toggle } from "@/components/Toggle";
+import { UndoRow } from "@/components/UndoRow";
+import { createCard, resetPassword, setActive, setPaid, updateParent, voidVisit } from "../../actions";
 
 export default async function ParentSheet({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin();
@@ -24,60 +29,64 @@ export default async function ParentSheet({ params }: { params: Promise<{ id: st
 
   return (
     <main className="wrap stack">
-      <section className="card">
-        <div className="between">
-          <div>
-            <h2>{u.parentName}{u.babyName ? <span className="muted"> · {u.babyName}</span> : null}</h2>
-            <div className="faint" dir="ltr" style={{ textAlign: "right" }}>{u.email}{u.phone ? ` · ${u.phone}` : ""}</div>
+      <section className="card stack tight">
+        <div className="page-header">
+          <div className="grow">
+            <h1>{u.parentName}{u.babyName ? <span className="muted"> · {u.babyName}</span> : null}</h1>
+            <div className="faint ltr">{u.email}{u.phone ? ` · ${u.phone}` : ""}</div>
           </div>
-          <Link href="/admin/parents" className="btn ghost" aria-label="סגירה">✕</Link>
+          <Link href="/admin/parents" className="btn ghost icon" aria-label="חזרה לרשימת ההורים"><Icon name="x" /></Link>
         </div>
-        {!u.active && <p className="tag warn" style={{ display: "inline-block" }}>מושבת</p>}
+        {!u.active && <div><StatusBadge tone="danger">מושבת</StatusBadge></div>}
       </section>
 
       <section className="card stack">
         <h3>כרטיסיות</h3>
-        {cards.length === 0 && <p className="faint" style={{ margin: 0 }}>אין כרטיסיות</p>}
+        {cards.length === 0 && <EmptyState icon="ticket" text="עוד אין כרטיסיות. פתחו אחת למטה" />}
         {cards.map((c) => (
-          <div key={c.id} className="stack" style={{ gap: 6, opacity: c.closed_at ? 0.6 : 1 }}>
+          <div key={c.id} className={`stack tight${c.closed_at ? " muted" : ""}`}>
             <div className="between">
-              <span>{c.name} · {c.entries - c.used} נותרו מתוך {c.entries}{c.closed_at ? " · נסגרה" : ""}</span>
-              <span className="row" style={{ gap: 8 }}>
+              <div className="row">
+                <span className="strong">{c.name}</span>
+                <span className="faint">{c.entries - c.used} נותרו מתוך {c.entries}</span>
+                {c.closed_at && <StatusBadge>נסגרה</StatusBadge>}
+              </div>
+              <span className="row nowrap">
                 <span className="faint">שולם</span>
                 <Toggle on={c.paid} label={`שולם עבור ${c.name}`} onChange={setPaid.bind(null, c.id)} />
               </span>
             </div>
-            {!c.closed_at && <PunchDots entries={c.entries} used={c.used} />}
+            {!c.closed_at && <PunchDots entries={c.entries} used={c.used} align="start" />}
           </div>
         ))}
         <details open={!hasOpen}>
-          <summary>כרטיסייה חדשה</summary>
+          <summary><Icon name="plus" />כרטיסייה חדשה</summary>
           <ActionForm action={createCard.bind(null, id)} submit="פתיחה">
-            <label className="f">תבנית
+            <Field label="תבנית">
               <select name="templateId" defaultValue={templates[0]?.id ?? "custom"}>
                 {templates.map((t) => <option key={t.id} value={t.id}>{t.name} · {t.entries} כניסות · {t.price} ₪</option>)}
                 <option value="custom">מותאמת אישית (מלאו למטה)</option>
               </select>
-            </label>
+            </Field>
             <div className="grid2">
-              <label className="f">שם<input name="name" placeholder="כרטיסיית 8" /></label>
-              <label className="f">כניסות<input name="entries" type="number" min={1} max={200} /></label>
+              <Field label="שם"><input name="name" placeholder="כרטיסיית 8" /></Field>
+              <Field label="כניסות"><input name="entries" type="number" inputMode="numeric" min={1} max={200} /></Field>
             </div>
-            <label className="f">מחיר (₪)<input name="price" type="number" min={0} defaultValue={0} /></label>
+            <Field label="מחיר (₪)"><input name="price" type="number" inputMode="numeric" min={0} defaultValue={0} /></Field>
           </ActionForm>
         </details>
       </section>
 
-      <section className="card">
+      <section className="card stack tight">
         <h3>ביקורים</h3>
-        {visits.length === 0 ? <p className="faint" style={{ margin: "6px 0 0" }}>אין ביקורים</p> : (
-          <ul className="list" style={{ marginTop: 6 }}>
-            {visits.map((v) => (
-              <li key={v.id} style={{ opacity: v.voided_at ? 0.5 : 1 }}>
-                <span style={{ textDecoration: v.voided_at ? "line-through" : undefined }}>{v.workshop ?? "סדנה"} · {fmtDate(v.visited_at)}</span>
-                {v.voided_at ? <span className="faint">בוטל</span> : <VoidButton visitId={v.id} />}
-              </li>
-            ))}
+        {visits.length === 0 ? <EmptyState icon="history" text="אין ביקורים עדיין" /> : (
+          <ul className="list">
+            {visits.map((v) => {
+              const label = <span>{v.workshop ?? "סדנה"} · <span className="ltr">{fmtDate(v.visited_at)}</span></span>;
+              return v.voided_at
+                ? <li key={v.id} className="is-voided">{label}<StatusBadge>בוטל</StatusBadge></li>
+                : <UndoRow key={v.id} mode="strike" action={voidVisit.bind(null, v.id)} button="ביטול" toast="הניקוב יבוטל והכניסה תחזור ליתרה">{label}</UndoRow>;
+            })}
           </ul>
         )}
       </section>
@@ -86,20 +95,23 @@ export default async function ParentSheet({ params }: { params: Promise<{ id: st
         <h3>פרטים</h3>
         <ActionForm action={updateParent.bind(null, id)} submit="שמירה" resetOnOk={false}>
           <div className="grid2">
-            <label className="f">שם ההורה<input name="parentName" defaultValue={u.parentName} required /></label>
-            <label className="f">שם התינוק<input name="babyName" defaultValue={u.babyName ?? ""} /></label>
+            <Field label="שם ההורה" required><input name="parentName" defaultValue={u.parentName} required /></Field>
+            <Field label="שם התינוק"><input name="babyName" defaultValue={u.babyName ?? ""} /></Field>
           </div>
-          <label className="f">טלפון<input name="phone" type="tel" defaultValue={u.phone ?? ""} dir="ltr" /></label>
+          <Field label="טלפון"><input name="phone" type="tel" defaultValue={u.phone ?? ""} dir="ltr" /></Field>
         </ActionForm>
         <details>
           <summary>איפוס סיסמה</summary>
           <ActionForm action={resetPassword.bind(null, id)} submit="עדכון סיסמה">
-            <label className="f">סיסמה חדשה<input name="password" minLength={8} required dir="ltr" /></label>
+            <Field label="סיסמה חדשה" required help="לפחות 8 תווים"><input name="password" minLength={8} required dir="ltr" /></Field>
           </ActionForm>
         </details>
-        <form action={setActive.bind(null, id, !u.active)}>
-          <button className={`btn ${u.active ? "danger" : ""}`}>{u.active ? "השבתת משתמש" : "הפעלה מחדש"}</button>
-        </form>
+        <div>
+          {u.active
+            ? <ConfirmButton label="השבתת משתמש" title={`להשבית את ${u.parentName}?`} body="ההורה לא יוכל להתחבר ולא יופיע ברשימת הניקוב. אפשר להפעיל מחדש בכל רגע."
+                confirm="השבתה" action={setActive.bind(null, id, false)} />
+            : <form action={setActive.bind(null, id, true)}><button className="btn">הפעלה מחדש</button></form>}
+        </div>
       </section>
     </main>
   );
