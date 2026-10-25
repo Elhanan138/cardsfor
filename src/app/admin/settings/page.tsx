@@ -7,7 +7,7 @@ import { getSettings } from "@/lib/settings";
 import { ActionForm } from "@/components/ActionForm";
 import { EmptyState } from "@/components/EmptyState";
 import { Field } from "@/components/Field";
-import { Icon } from "@/components/Icon";
+import { Icon, type IconName } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
 import { SessionTimeField } from "@/components/SessionTimeField";
 import { Toggle } from "@/components/Toggle";
@@ -25,18 +25,18 @@ export default async function Settings() {
     db().select({ id: schema.users.id, name: schema.users.parentName, email: schema.users.email }).from(schema.users).where(eq(schema.users.role, "admin")),
   ]);
   const activeTypes = types.filter((t) => t.active);
+  const activeTemplates = templates.filter((t) => t.active);
+  const contacts = [s?.bitPhone || s?.bitUrl ? "ביט" : null, s?.whatsappPhone ? "וואטסאפ" : null, s?.callPhone ? "חיוג" : null].filter(Boolean);
 
   return (
     <main className="wrap stack">
-      <PageHeader title="הגדרות" description="מיתוג, פרטי קשר, סדנאות, כרטיסיות ומנהלים" />
+      <PageHeader title="הגדרות" description="פתחו אזור כדי לערוך" />
 
-      <section className="card stack">
-        <h3>מיתוג</h3>
+      <Section title="מיתוג" icon="palette" summary={<>{s?.logoDataUrl ? "לוגו וצבעים מותאמים" : "העלו לוגו והצבעים יחולצו ממנו"}</>} open={false}>
         <ThemeFromLogo initialLogo={s?.logoDataUrl ?? null} initialTheme={s?.theme ?? null} />
-      </section>
+      </Section>
 
-      <section className="card stack">
-        <h3>עסק ויצירת קשר</h3>
+      <Section title="עסק ויצירת קשר" icon="phone" summary={<>{contacts.length ? contacts.join(" · ") : "עוד לא הוגדרו אמצעי קשר"}</>} open={!contacts.length}>
         <ActionForm action={saveBusiness} submit="שמירה" resetOnOk={false}>
           <Field label="שם העסק" required><input name="businessName" defaultValue={s?.businessName ?? ""} required /></Field>
           <div className="grid2">
@@ -48,10 +48,9 @@ export default async function Settings() {
             <input name="bitUrl" type="url" placeholder="https://" defaultValue={s?.bitUrl ?? ""} dir="ltr" />
           </Field>
         </ActionForm>
-      </section>
+      </Section>
 
-      <section className="card stack">
-        <h3>סוגי סדנאות</h3>
+      <Section title="סוגי סדנאות" icon="tag" summary={<>{activeTypes.length ? `${activeTypes.length} פעילים` : "עוד אין סוגי סדנאות"}</>} open={types.length === 0}>
         {types.length === 0 ? <EmptyState icon="tag" text="הוסיפו את סוג הסדנה הראשון כדי לנקב ולתזמן מפגשים" /> : (
           <ul className="list">
             {types.map((t) => (
@@ -62,10 +61,9 @@ export default async function Settings() {
         <ActionForm action={addWorkshopType} submit="הוספה" className="row nowrap">
           <input name="name" placeholder="עיסוי תינוקות" required className="grow" aria-label="שם סדנה" />
         </ActionForm>
-      </section>
+      </Section>
 
-      <section className="card stack">
-        <h3>תבניות כרטיסיות</h3>
+      <Section title="תבניות כרטיסיות" icon="ticket" summary={<>{activeTemplates.length ? `${activeTemplates.map((t) => t.entries).join(" · ")} כניסות` : "עוד אין תבניות"}</>} open={templates.length === 0}>
         {templates.length === 0 ? <EmptyState icon="ticket" text="תבנית חוסכת הקלדה בכל פתיחת כרטיסייה" /> : (
           <ul className="list">
             {templates.map((t) => (
@@ -83,10 +81,9 @@ export default async function Settings() {
             </div>
           </ActionForm>
         </details>
-      </section>
+      </Section>
 
-      <section className="card stack">
-        <h3>מפגשים קרובים</h3>
+      <Section title="מפגשים קרובים" icon="calendar" summary={<>{sessions[0] ? <>הבא: <span className="ltr">{fmtSession(sessions[0].starts_at)}</span></> : "אין מפגשים מתוכננים"}</>} open={false}>
         {sessions.length === 0 ? <EmptyState icon="calendar" text="אין מפגשים מתוכננים. ההורים יראו כאן את המפגשים שתוסיפו" /> : (
           <ul className="list">
             {sessions.map((x) => (
@@ -108,10 +105,9 @@ export default async function Settings() {
             </ActionForm>
           </details>
         ) : <p className="faint m0">הוסיפו סוג סדנה כדי לתזמן מפגשים</p>}
-      </section>
+      </Section>
 
-      <section className="card stack">
-        <h3>מנהלים</h3>
+      <Section title="מנהלים" icon="shield" summary={<>{`${admins.length} מנהלים`}</>} open={false}>
         <ul className="list">{admins.map((a) => <li key={a.id}><span>{a.name}</span><span className="faint ltr">{a.email}</span></li>)}</ul>
         <details>
           <summary><Icon name="plus" />הוספת מנהל</summary>
@@ -121,9 +117,27 @@ export default async function Settings() {
             <Field label="סיסמה" required help="לפחות 10 תווים"><input name="password" minLength={10} required dir="ltr" /></Field>
           </ActionForm>
         </details>
-      </section>
+      </Section>
 
       <p className="faint center m0"><Link href="/admin/styleguide">מדריך עיצוב</Link></p>
     </main>
+  );
+}
+
+function Section({ title, icon, summary, open, children }: { title: string; icon: IconName; summary: React.ReactNode; open: boolean; children: React.ReactNode }) {
+  return (
+    <details className="card acc" open={open}>
+      <summary>
+        <span className="row nowrap grow">
+          <span className="acc-ico"><Icon name={icon} /></span>
+          <span className="grow acc-text">
+            <span className="h3">{title}</span>
+            <span className="faint">{summary}</span>
+          </span>
+        </span>
+        <span className="chev"><Icon name="chevronLeft" /></span>
+      </summary>
+      <div className="stack">{children}</div>
+    </details>
   );
 }

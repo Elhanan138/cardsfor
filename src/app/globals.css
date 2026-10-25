@@ -205,3 +205,51 @@ dialog.confirm p { margin: 8px 0 0; color: var(--muted); }
 .skel-card .line:nth-child(2) { width: 90%; }
 .skel-card .line:nth-child(3) { width: 70%; }
 .skel-card .line:nth-child(4) { width: 50%; }
+
+/* ---------- הצעה א׳ ---------- */
+.nav-row { max-width: 760px; margin: 0 auto; padding: 0 16px; }
+.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  font: inherit; font-size: .9rem; color: var(--muted); background: var(--surface); border: 1px solid var(--line);
+  border-radius: 999px; padding: 4px 12px; min-height: 40px; display: inline-flex; align-items: center; gap: 4px;
+  white-space: nowrap; cursor: pointer; text-decoration: none; transition: background .15s, color .15s;
+}
+.chip[aria-pressed="true"], .chip[aria-current="page"] { background: var(--primary-soft); border-color: transparent; color: var(--primary-text); font-weight: 600; }
+.chip .count { color: var(--faint); font-weight: 400; }
+
+.search { position: relative; }
+.search .ico { position: absolute; inset-inline-start: 12px; top: 14px; color: var(--faint); pointer-events: none; }
+.search input { padding-inline-start: 36px; }
+
+.dots.mini { gap: 4px; margin: 4px 0 0; justify-content: flex-start; max-width: none; }
+.dots.mini span { width: 10px; height: 10px; border-width: 1.5px; }
+.dots.mini span.punched { background: var(--primary); }
+.list li.is-just { background: var(--primary-soft); margin-inline: -16px; padding-inline: 16px; transition: background .2s; }
+
+/* גיליון: תחתון בנייד, לוח צף בדסקטופ. גוף נגלל, כפתורים קבועים למטה משמאל */
+dialog.sheet {
+  border: 0; padding: 0; margin: auto auto 0; width: 100%; max-width: 100%; max-height: 90dvh;
+  border-radius: var(--r-card) var(--r-card) 0 0; background: var(--surface); color: var(--ink);
+}
+dialog.sheet[open] { display: flex; flex-direction: column; animation: sheet-in .2s ease-out; }
+dialog.sheet::backdrop { background: var(--scrim); }
+@media (min-width: 640px) { dialog.sheet { margin: auto; max-width: 520px; border-radius: var(--r-card); } }
+@keyframes sheet-in { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+.sheet-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 16px 8px; }
+.sheet-head::before { content: ""; position: absolute; top: 8px; inset-inline: 0; margin: auto; width: 40px; height: 4px; border-radius: 2px; background: var(--line); }
+.sheet-form { overflow-y: auto; padding: 0 16px; }
+.sheet-form > .form-actions {
+  position: sticky; bottom: 0; background: var(--surface); justify-content: flex-end;
+  padding: 12px 0 calc(16px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); margin-top: 4px;
+}
+
+/* אקורדיון הגדרות */
+details.acc > summary { list-style: none; color: var(--ink); padding: 0; margin: 0; justify-content: space-between; min-height: 48px; }
+details.acc > summary::-webkit-details-marker { display: none; }
+details.acc > summary .acc-ico { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary-text); flex-shrink: 0; }
+details.acc > summary .chev { color: var(--faint); transition: transform .15s; }
+details.acc[open] > summary .chev { transform: rotate(-90deg); }
+details.acc[open] > summary { margin-bottom: 16px; }
+.acc-text { display: grid; }
+.h3 { font-family: var(--font-display); font-size: 1.05rem; line-height: 1.25; }

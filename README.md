@@ -4,7 +4,7 @@ Next.js 15 · Auth.js · Neon Postgres · Vercel
 
 ## פריסה (10 דקות)
 
-1. **GitHub** — צור repo חדש והעלה את תוכן התיקייה.
+1. **GitHub** — הקוד כבר בשורש ה-repo (מוכן ל-Vercel).
 2. **Vercel** — Add New → Project → בחר את ה-repo → Deploy (ייכשל בפעם הראשונה, זה תקין).
 3. **Neon** — בפרויקט ב-Vercel: Storage → Create Database → Neon → Connect.
    `DATABASE_URL` נוסף אוטומטית.

@@ -12,10 +12,10 @@ const items = [
 export function AdminNav() {
   const p = usePathname();
   return (
-    <nav className="nav" aria-label="ניווט מנהל">
+    <nav className="chips nav-row" aria-label="ניווט מנהל">
       {items.map((i) => {
         const active = i.href === "/admin" ? p === "/admin" : p.startsWith(i.href);
-        return <Link key={i.href} href={i.href} aria-current={active ? "page" : undefined}>{i.label}</Link>;
+        return <Link key={i.href} href={i.href} className="chip" aria-current={active ? "page" : undefined}>{i.label}</Link>;
       })}
     </nav>
   );

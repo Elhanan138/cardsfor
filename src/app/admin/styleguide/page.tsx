@@ -60,7 +60,33 @@ export default async function StyleGuide() {
       <section className="card stack">
         <h3>כרטיסייה מנוקבת</h3>
         <PunchDots entries={8} used={3} />
+        <PunchDots entries={8} used={3} variant="mini" />
+        <p className="faint m0">מלאה בכרטיס, mini בשורות רשימה.</p>
       </section>
+
+      <section className="card stack">
+        <h3>צ׳יפים (בחירה / סינון / ניווט)</h3>
+        <div className="chips">
+          <button className="chip" aria-pressed="true"><Icon name="check" size="sm" />עיסוי תינוקות</button>
+          <button className="chip" aria-pressed="false">התפתחות</button>
+          <button className="chip" aria-pressed="false">לא שולם <span className="count">· 3</span></button>
+        </div>
+        <p className="faint m0">aria-pressed לבחירה וסינון, aria-current בניווט. גובה 40px, גלילה אופקית.</p>
+      </section>
+
+      <section className="card stack">
+        <h3>חיפוש</h3>
+        <div className="search"><Icon name="search" /><input type="search" placeholder="חיפוש" /></div>
+      </section>
+
+      <details className="card acc">
+        <summary>
+          <span className="row nowrap grow"><span className="acc-ico"><Icon name="tag" /></span>
+            <span className="grow acc-text"><span className="h3">אקורדיון הגדרות</span><span className="faint">תקציר חי של התוכן</span></span></span>
+          <span className="chev"><Icon name="chevronLeft" /></span>
+        </summary>
+        <p className="m0">אזור סגור מציג תקציר; נפתח אוטומטית כשהאזור ריק.</p>
+      </details>
 
       <section className="card">
         <h3>EmptyState</h3>
@@ -76,6 +102,8 @@ export default async function StyleGuide() {
       <section className="card stack">
         <h3>חוקי שכבות</h3>
         <ul className="m0">
+          <li>יצירת ישות (הורה): Sheet — גיליון תחתון בנייד, לוח צף בדסקטופ, גוף נגלל וכפתורים קבועים משמאל.</li>
+          <li>אחרי ניקוב: UndoToast — 10 שניות לביטול, השורה מודגשת.</li>
           <li>מחיקה/ביטול קל (ניקוב, מפגש): UndoRow — עדכון מיידי + טוסט ״ביטול״ 5 שניות.</li>
           <li>פעולה כבדה (השבתת משתמש): ConfirmButton — חלון אישור, כפתורים משמאל.</li>
           <li>תאריכים: lib/formatDate בלבד, dd/MM/yyyy. בחירת מועד: SessionTimeField (בלי input type=date).</li>

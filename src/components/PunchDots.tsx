@@ -1,6 +1,6 @@
-export function PunchDots({ entries, used, align = "center" }: { entries: number; used: number; align?: "center" | "start" }) {
+export function PunchDots({ entries, used, variant = "full" }: { entries: number; used: number; variant?: "full" | "start" | "mini" }) {
   return (
-    <div className={`dots${align === "start" ? " start" : ""}`} role="img" aria-label={`נוקבו ${used} מתוך ${entries}`}>
+    <div className={`dots${variant === "full" ? "" : ` ${variant}`}`} role="img" aria-label={`נוקבו ${used} מתוך ${entries}`}>
       {Array.from({ length: entries }, (_, i) => <span key={i} className={i < used ? "punched" : ""} />)}
     </div>
   );

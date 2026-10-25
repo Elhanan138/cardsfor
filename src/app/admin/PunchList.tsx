@@ -1,34 +1,37 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import type { ParentRow } from "@/lib/data";
 import { EmptyState } from "@/components/EmptyState";
 import { Icon } from "@/components/Icon";
+import { PunchDots } from "@/components/PunchDots";
 import { StatusBadge } from "@/components/StatusBadge";
+import { UndoToast } from "@/components/UndoToast";
 import { punch, voidVisit } from "./actions";
 
 const UNDO_SEC = 10;
+const TYPE_KEY = "punch-type";
 
 export function PunchList({ parents, types }: { parents: ParentRow[]; types: { id: string; name: string }[] }) {
   const [q, setQ] = useState("");
   const [type, setType] = useState(types[0]?.id ?? "");
-  const [toast, setToast] = useState<{ visitId: string; name: string; remaining: number; t: number } | null>(null);
+  const [toast, setToast] = useState<{ visitId: string; name: string; remaining: number } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [just, setJust] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
   useEffect(() => {
-    const saved = localStorage.getItem("punch-type");
-    if (saved && types.some((t) => t.id === saved)) setType(saved);
+    try {
+      const saved = localStorage.getItem(TYPE_KEY);
+      if (saved && types.some((t) => t.id === saved)) setType(saved);
+    } catch { /* אחסון חסום */ }
   }, [types]);
 
-  useEffect(() => {
-    if (!toast) return;
-    if (toast.t <= 0) { setToast(null); return; }
-    const id = setTimeout(() => setToast((x) => (x ? { ...x, t: x.t - 1 } : x)), 1000);
-    return () => clearTimeout(id);
-  }, [toast]);
+  function pickType(id: string) {
+    setType(id);
+    try { localStorage.setItem(TYPE_KEY, id); } catch { /* אחסון חסום */ }
+  }
 
   const shown = useMemo(() => {
     const s = q.trim();
@@ -41,7 +44,7 @@ export function PunchList({ parents, types }: { parents: ParentRow[]; types: { i
       const r = await punch(p.id, type || null);
       if ("error" in r) { setErr(`${p.parent_name}: ${r.error}`); return; }
       setJust(p.id);
-      setToast({ visitId: r.visitId, name: p.parent_name, remaining: r.remaining, t: UNDO_SEC });
+      setToast({ visitId: r.visitId, name: p.parent_name, remaining: r.remaining });
     });
   }
 
@@ -52,16 +55,23 @@ export function PunchList({ parents, types }: { parents: ParentRow[]; types: { i
     start(async () => { await voidVisit(id); setJust(null); });
   }
 
+  const expire = useCallback(() => setToast(null), []);
+
   return (
     <div className="stack">
-      <div className="row nowrap">
+      <div className="search">
+        <Icon name="search" />
         <input type="search" placeholder="חיפוש הורה, תינוק או טלפון" value={q} onChange={(e) => setQ(e.target.value)} aria-label="חיפוש" autoFocus />
-        {types.length > 0 && (
-          <select value={type} onChange={(e) => { setType(e.target.value); localStorage.setItem("punch-type", e.target.value); }} aria-label="סוג סדנה" className="auto">
-            {types.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </select>
-        )}
       </div>
+      {types.length > 0 && (
+        <div className="chips" role="group" aria-label="סוג סדנה">
+          {types.map((t) => (
+            <button key={t.id} type="button" className="chip" aria-pressed={t.id === type} onClick={() => pickType(t.id)}>
+              {t.id === type && <Icon name="check" size="sm" />}{t.name}
+            </button>
+          ))}
+        </div>
+      )}
       {err && <p className="msg err m0" role="alert">{err}</p>}
       <section className="card list-card">
         {shown.length === 0 ? (
@@ -73,9 +83,10 @@ export function PunchList({ parents, types }: { parents: ParentRow[]; types: { i
             {shown.map((p) => {
               const left = p.entries != null ? p.entries - p.used : null;
               return (
-                <li key={p.id} className={just === p.id ? "just" : ""}>
+                <li key={p.id} className={just === p.id ? "is-just" : undefined}>
                   <Link href={`/admin/parents/${p.id}`} className="plain-link grow">
                     <div><span className="strong">{p.parent_name}</span>{p.baby_name ? <span className="muted"> · {p.baby_name}</span> : null}</div>
+                    {p.entries != null && <PunchDots entries={p.entries} used={p.used} variant="mini" />}
                     <div className="row">
                       <span className={`faint${left !== null && left <= 1 ? " text-danger" : ""}`}>{left === null ? "אין כרטיסייה פתוחה" : `${left} נותרו`}</span>
                       {p.paid === false && <StatusBadge tone="warning">לא שולם</StatusBadge>}
@@ -90,12 +101,7 @@ export function PunchList({ parents, types }: { parents: ParentRow[]; types: { i
           </ul>
         )}
       </section>
-      {toast && (
-        <div className="toast" role="status">
-          <span>נוקב: {toast.name} · {toast.remaining} נותרו</span>
-          <button type="button" onClick={undo}><Icon name="undo" size="sm" />ביטול ({toast.t})</button>
-        </div>
-      )}
+      {toast && <UndoToast key={toast.visitId} text={`נוקב: ${toast.name} · ${toast.remaining} נותרו`} seconds={UNDO_SEC} onUndo={undo} onExpire={expire} />}
     </div>
   );
 }

@@ -11,11 +11,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <>
       <header className="top">
         <Brand logo={s?.logoDataUrl} name={s?.businessName} />
-        <div className="row nowrap admin-actions">
-          <AdminNav />
-          <SignOut />
-        </div>
+        <SignOut compact />
       </header>
+      <AdminNav />
       {children}
     </>
   );

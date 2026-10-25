@@ -10,6 +10,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { Field } from "@/components/Field";
 import { Icon } from "@/components/Icon";
 import { PunchDots } from "@/components/PunchDots";
+import { PunchNowButton } from "@/components/PunchNowButton";
+import { telHref, waHref } from "@/lib/phone";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Toggle } from "@/components/Toggle";
 import { UndoRow } from "@/components/UndoRow";
@@ -21,9 +23,10 @@ export default async function ParentSheet({ params }: { params: Promise<{ id: st
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const [u] = await db().select().from(schema.users).where(and(eq(schema.users.id, id), eq(schema.users.role, "parent"))).limit(1);
   if (!u) notFound();
-  const [cards, visits, templates] = await Promise.all([
+  const [cards, visits, templates, types] = await Promise.all([
     cardsFor(id), visitsFor(id, true, 50),
     db().select().from(schema.cardTemplates).where(eq(schema.cardTemplates.active, true)).orderBy(asc(schema.cardTemplates.entries)),
+    db().select({ id: schema.workshopTypes.id, name: schema.workshopTypes.name }).from(schema.workshopTypes).where(eq(schema.workshopTypes.active, true)).orderBy(asc(schema.workshopTypes.name)),
   ]);
   const hasOpen = cards.some((c) => !c.closed_at);
 
@@ -33,10 +36,16 @@ export default async function ParentSheet({ params }: { params: Promise<{ id: st
         <div className="page-header">
           <div className="grow">
             <h1>{u.parentName}{u.babyName ? <span className="muted"> · {u.babyName}</span> : null}</h1>
-            <div className="faint ltr">{u.email}{u.phone ? ` · ${u.phone}` : ""}</div>
+            <div className="faint ltr">{u.phone ? `${u.phone} · ` : ""}{u.email}</div>
           </div>
           <Link href="/admin/parents" className="btn ghost icon" aria-label="חזרה לרשימת ההורים"><Icon name="x" /></Link>
         </div>
+        {u.phone && (
+          <div className="row">
+            <a className="btn" href={waHref(u.phone)} target="_blank" rel="noopener noreferrer"><Icon name="message" />וואטסאפ</a>
+            <a className="btn" href={telHref(u.phone)}><Icon name="phone" />חיוג</a>
+          </div>
+        )}
         {!u.active && <div><StatusBadge tone="danger">מושבת</StatusBadge></div>}
       </section>
 
@@ -56,7 +65,8 @@ export default async function ParentSheet({ params }: { params: Promise<{ id: st
                 <Toggle on={c.paid} label={`שולם עבור ${c.name}`} onChange={setPaid.bind(null, c.id)} />
               </span>
             </div>
-            {!c.closed_at && <PunchDots entries={c.entries} used={c.used} align="start" />}
+            {!c.closed_at && <PunchDots entries={c.entries} used={c.used} />}
+            {!c.closed_at && u.active && <PunchNowButton userId={id} name={u.parentName} types={types} disabled={c.used >= c.entries} />}
           </div>
         ))}
         <details open={!hasOpen}>
